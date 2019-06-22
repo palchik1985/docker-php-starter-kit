@@ -22,7 +22,6 @@ func main() {
 	// https://habr.com/ru/post/420673/ docker for prod
 	// good PHP Dockerfile (alpine based) for Symfony https://github.com/eko/docker-symfony
 	// todo: сделать проверку отступов в конфигах контейнеров: (split на строки и проверка первых символов)
-	// todo: Переписать на alpine по максимуму (для экономии места)
 
 	// override --help message
 	cli.AppHelpTemplate = `
