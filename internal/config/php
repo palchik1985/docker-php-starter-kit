@@ -1,0 +1,14 @@
+  php:
+    container_name: ${APPNAME}_php
+    build:
+      context: ./php
+      args:
+        workdir: ${SITE_WORKDIR_IN_CONTAINER}
+        php_modules_list: ${NEEDED_PHP_MODULES}
+    working_dir: ${SITE_WORKDIR_IN_CONTAINER}
+    volumes:
+    - ./..:${SITE_WORKDIR_IN_CONTAINER}
+    - ./php/php.ini:/etc/php/fpm/php.ini
+    - ./php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
+    links:
+      - db

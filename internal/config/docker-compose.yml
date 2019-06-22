@@ -1,0 +1,63 @@
+# during to work, all containers have internal lan, and have DNS names like their names. So you can to connect to container directly by his DNS name
+# So you can connect to php container to port 9000 from another container with "php:9000" (see nginx site config for example) because this container has DNS name "php"
+version: "3.7"
+
+services:
+
+  # nginx service configuration
+  nginx:
+    image: nginx:latest
+    container_name: ${APPNAME}_nginx
+    ports:
+      - 80:80
+#      - 443:443
+    volumes:
+      - ./..:${SITE_WORKDIR_IN_CONTAINER}
+      - ./nginx/logs:/var/log/nginx # you can find logs - ./nginx/logs
+      - ./nginx/site.conf:/etc/nginx/conf.d/site.conf # local site configuration
+#      - ./nginx/nginx.conf:/etc/nginx/
+    links:
+      - php
+
+
+  php:
+    container_name: ${APPNAME}_php
+    build:
+      context: ./php/${MYPHP_VERSION}
+      args:
+        workdir: ${SITE_WORKDIR_IN_CONTAINER}
+        php_modules_list: ${NEEDED_PHP_MODULES}
+    volumes:
+      - ./..:${SITE_WORKDIR_IN_CONTAINER}
+      - ./php/php.ini:/etc/php/fpm/php.ini
+      - ./php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
+#    links:
+#      - db
+
+
+
+  # you can connect to mysql from php code with "mysql:3306" because this container has DNS name "mysql"
+  db:
+    image: mysql:${MYSQL_VERSION}
+    container_name: ${APPNAME}_mysql
+    ports:
+      - 3306:3306
+    volumes:
+      - ./mysql/db_file:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=${APPNAME}
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+    restart: always
+
+#  db:
+#    image: postgres:9.6
+#    ports:
+#      - 5432:5432
+#    environment:
+#      POSTGRES_USER: root
+#      POSTGRES_PASSWORD: root
+#      POSTGRES_DB: ${APPNAME}
+#    volumes_from:
+#      - application

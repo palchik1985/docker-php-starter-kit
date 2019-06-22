@@ -1,0 +1,4 @@
+  memcached:
+    image: memcached:1.5.16-alpine
+    ports:
+    - 11211:11211

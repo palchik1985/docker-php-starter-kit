@@ -1,0 +1,5 @@
+# during to work, all containers have internal lan, and have DNS names like their names. So you can to connect to container directly by his DNS name
+# So you can connect to php container to port 9000 from another container with "php:9000" (see nginx site config for example) because this container has DNS name "php"
+version: "3.7"
+
+services:

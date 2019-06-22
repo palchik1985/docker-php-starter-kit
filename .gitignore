@@ -1,0 +1,4 @@
+.idea
+database/db_file
+nginx/logs
+xdebug_logs

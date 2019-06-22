@@ -1,0 +1,10 @@
+  # you can see your phpmyadmin in localhost:8888 or ${APPNAME}.local:8888
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - '8888:80'
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=db
+    depends_on:
+      - db

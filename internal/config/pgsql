@@ -1,0 +1,15 @@
+# you can connect to postgres from php code or from another container with "db:3306" because this container has DNS name "db"
+# you can connect to postgres from localhost (with programs like SQL Workbench) with localhost:3306
+  db:
+    image: postgres:9.6-alpine
+    ports:
+    - 5432:5432
+    container_name: ${APPNAME}_postgresql
+    restart: always
+    working_dir: ${SITE_WORKDIR_IN_CONTAINER}
+    environment:
+      POSTGRES_DB: ${SQL_DATABASE}
+      POSTGRES_USER: ${SQL_USER}
+      POSTGRES_PASSWORD: ${SQL_PASSWORD}
+    volumes:
+      - ./database/db_file:/var/lib/postgresql/data

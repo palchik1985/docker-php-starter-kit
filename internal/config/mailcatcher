@@ -1,0 +1,5 @@
+  mailcatcher:
+    image: schickling/mailcatcher:latest
+    container_name: ${APPNAME}_mailcatcher
+    ports:
+      - 1080:1080

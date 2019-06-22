@@ -1,0 +1,16 @@
+  # you can connect to mysql from php code or from another container with "db:3306" because this container has DNS name "db"
+  # you can connect to mysql from localhost (with programs like SQL Workbench) with localhost:3306
+  db:
+    image: mysql:${MYSQL_VERSION}
+    container_name: ${APPNAME}_mysql
+    ports:
+    - 3306:3306 #host:container
+    volumes:
+    - ./database/db_file:/var/lib/mysql
+    working_dir: ${SITE_WORKDIR_IN_CONTAINER}
+    environment:
+    - MYSQL_ROOT_PASSWORD=${SQL_ROOT_PASSWORD}
+    - MYSQL_DATABASE=${SQL_DATABASE}
+    - MYSQL_USER=${SQL_USER}
+    - MYSQL_PASSWORD=${SQL_PASSWORD}
+    restart: always
