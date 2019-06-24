@@ -30,6 +30,8 @@ func commands() {
 			Aliases: []string{"cp"},
 			Usage:   "Creates Project. Creates file docker-compose.yml with needed containers which you choose in .env file. WARNING! Your changes in docker-compose.yml will be overrided!",
 			Action: func(c *cli.Context) {
+
+				// toDO: заполнить .env или пропустить шаг
 				// warning
 				reader := bufio.NewReader(os.Stdin)
 				// toDo: проверить есть ли файлы, и спрашивать только если они есть
@@ -44,51 +46,51 @@ func commands() {
 				if err != nil {
 					log.Fatal("Error loading .env file")
 				}
-
+				abspath := os.Getenv("DEPLOY_LOCAL_DOCKER_PATH")
 				// create config file
 				var fileCompose bytes.Buffer
 
 				// add start part to config file
-				fileStart, err := ioutil.ReadFile("internal/config/start")
+				fileStart, err := ioutil.ReadFile(fmt.Sprintf("%s/internal/config/start", abspath))
 				if err != nil {
-					log.Fatal("Error loading start part of file from ./internal/config/start. Aborted.")
+					log.Fatal(fmt.Sprintf("Error loading start part of file from %s/internal/config/start. Aborted.", abspath))
 				}
 				fileCompose.Write(fileStart)
 				fileCompose.Write([]byte("\n\n"))
 
 				// add nginx_php
 
-				fileNginx, err := ioutil.ReadFile("internal/config/nginx_php")
+				fileNginx, err := ioutil.ReadFile(fmt.Sprintf("%s/internal/config/nginx_php", abspath))
 				if err != nil {
-					log.Fatal("Error loading nginx file from ./internal/config/nginx_php. Aborted.")
+					log.Fatal(fmt.Sprintf("Error loading nginx file from %s/internal/config/nginx_php. Aborted.", abspath))
 				}
 				fileCompose.Write(fileNginx)
 				fileCompose.Write([]byte("\n\n"))
 
 				// add config files for nginx_php
-				_ = os.Mkdir("nginx_php", 0755)
-				_ = os.Mkdir("nginx_php/config", 0755)
+				_ = os.Mkdir(fmt.Sprintf("%s/nginx_php", abspath), 0755)
+				_ = os.Mkdir(fmt.Sprintf("%s/nginx_php/config", abspath), 0755)
 
-				file, _ := ioutil.ReadFile("internal/config/modules/trafex_php_nginx/Dockerfile")
-				ioutil.WriteFile("nginx_php/Dockerfile", file, 0644)
+				file, _ := ioutil.ReadFile(fmt.Sprintf("%s/internal/config/modules/trafex_php_nginx/Dockerfile", abspath))
+				ioutil.WriteFile(fmt.Sprintf("%s/nginx_php/Dockerfile", abspath), file, 0644)
 
-				file, _ = ioutil.ReadFile("internal/config/modules/trafex_php_nginx/config/fpm-pool.conf")
-				ioutil.WriteFile("nginx_php/config/fpm-pool.conf", file, 0644)
+				file, _ = ioutil.ReadFile(fmt.Sprintf("%s/internal/config/modules/trafex_php_nginx/config/fpm-pool.conf", abspath))
+				ioutil.WriteFile(fmt.Sprintf("%s/nginx_php/config/fpm-pool.conf", abspath), file, 0644)
 
-				file, _ = ioutil.ReadFile("internal/config/modules/trafex_php_nginx/config/nginx.conf")
-				ioutil.WriteFile("nginx_php/config/nginx.conf", file, 0644)
+				file, _ = ioutil.ReadFile(fmt.Sprintf("%s/internal/config/modules/trafex_php_nginx/config/nginx.conf", abspath))
+				ioutil.WriteFile(fmt.Sprintf("%s/nginx_php/config/nginx.conf", abspath), file, 0644)
 
-				file, _ = ioutil.ReadFile("internal/config/modules/trafex_php_nginx/config/php.ini")
-				ioutil.WriteFile("nginx_php/config/php.ini", file, 0644)
+				file, _ = ioutil.ReadFile(fmt.Sprintf("%s/internal/config/modules/trafex_php_nginx/config/php.ini", abspath))
+				ioutil.WriteFile(fmt.Sprintf("%s/nginx_php/config/php.ini", abspath), file, 0644)
 
-				file, _ = ioutil.ReadFile("internal/config/modules/trafex_php_nginx/config/supervisord.conf")
-				ioutil.WriteFile("nginx_php/config/supervisord.conf", file, 0644)
+				file, _ = ioutil.ReadFile(fmt.Sprintf("%s/internal/config/modules/trafex_php_nginx/config/supervisord.conf", abspath))
+				ioutil.WriteFile(fmt.Sprintf("%s/nginx_php/config/supervisord.conf", abspath), file, 0644)
 
 				// Add framework/css nginx site config:
 				// question to user
 				reader = bufio.NewReader(os.Stdin)
-				fmt.Print("\nPlease write needed framework/cms nginx config name, or write nothing for default. \n(Available list: ")
-				files, _ := ioutil.ReadDir("./internal/config/modules/nginx/sites_conf")
+				fmt.Print("\nPlease write needed framework/cms nginx config name, or leave it empty for default. \n(Available list: ")
+				files, _ := ioutil.ReadDir(fmt.Sprintf("%s/internal/config/modules/nginx/sites_conf", abspath))
 				for _, filesite := range files {
 					fmt.Print(filesite.Name() + ", ")
 				}
@@ -108,18 +110,18 @@ func commands() {
 				filestring = strings.Replace(filestring, "${ENV}", os.Getenv("ENV"), -1)
 				filestring = strings.Replace(filestring, "${SITE_WORKDIR_IN_CONTAINER}", os.Getenv("SITE_WORKDIR_IN_CONTAINER"), -1)
 				// write site.conf
-				ioutil.WriteFile("nginx_php/site.conf", []byte(filestring), 0644)
+				ioutil.WriteFile(fmt.Sprintf("%s/nginx_php/site.conf", abspath), []byte(filestring), 0644)
 
 				// add db
 				if strings.ToLower(os.Getenv("DB_DRIVER")) == "mysql" {
-					fileMySql, err := ioutil.ReadFile("internal/config/mysql")
+					fileMySql, err := ioutil.ReadFile(fmt.Sprintf("%s/internal/config/mysql", abspath))
 					if err != nil {
 						log.Fatal(err)
 					}
 					fileCompose.Write(fileMySql)
 				} else {
 					// add file with the same name as lowercased DB_DRIVER value
-					fileDb, err := ioutil.ReadFile(fmt.Sprintf("internal/config/%s", strings.ToLower(os.Getenv("DB_DRIVER"))))
+					fileDb, err := ioutil.ReadFile(fmt.Sprintf("%s/internal/config/%s", abspath, strings.ToLower(os.Getenv("DB_DRIVER"))))
 					//fileDb, err = checkTabs(fileDb)
 					if err != nil {
 						log.Fatal(err)
@@ -133,7 +135,7 @@ func commands() {
 				if os.Getenv("OTHER_CONTAINERS") != "" {
 					files := strings.Split(os.Getenv("OTHER_CONTAINERS"), " ")
 					for _, file := range files {
-						file, err := ioutil.ReadFile(fmt.Sprintf("internal/config/%s", strings.ToLower(file)))
+						file, err := ioutil.ReadFile(fmt.Sprintf("%s/internal/config/%s", abspath, strings.ToLower(file)))
 						if err != nil {
 							log.Fatal(err)
 						}
@@ -143,7 +145,7 @@ func commands() {
 				}
 
 				// save docker-compose.yml
-				err1 := ioutil.WriteFile("docker-compose.yml", fileCompose.Bytes(), 0644)
+				err1 := ioutil.WriteFile(fmt.Sprintf("%s/docker-compose.yml", abspath), fileCompose.Bytes(), 0644)
 				if err1 != nil {
 					log.Fatal(err1)
 				}
@@ -167,7 +169,7 @@ func commands() {
 			Usage:   "Usage: ci [path]. COMPOSER INSTALL. Default runs in PROJECT_ROOT. You can add another PATH with second argument. WARNING: Use only absolute path in container!",
 			Action: func(c *cli.Context) {
 
-				// get current user. It needed because files after composer install will be owned by root:root
+				// get current user. It needed because in other case files after "composer install" will be owned by root:root
 				user, err := user.Current()
 				if err != nil {
 					panic(err)
@@ -248,7 +250,7 @@ func commands() {
 				if err != nil {
 					log.Fatal("Error loading .env file")
 				}
-				cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("cat ./database/dump.sql | docker exec -i %s_mysql /usr/bin/mysql -u %s --password=%s %s", os.Getenv("APPNAME"), os.Getenv("SQL_USER"), os.Getenv("SQL_USER"), os.Getenv("APPNAME")))
+				cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("cat %s/database/dump.sql | docker exec -i %s_mysql /usr/bin/mysql -u %s --password=%s %s", os.Getenv("DEPLOY_LOCAL_DOCKER_PATH"), os.Getenv("APPNAME"), os.Getenv("SQL_USER"), os.Getenv("SQL_USER"), os.Getenv("APPNAME")))
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 				cmd.Run()
@@ -263,7 +265,7 @@ func commands() {
 				if err != nil {
 					log.Fatal("Error loading .env file")
 				}
-				cmd := exec.Command("/bin/sh", "-c", "docker-compose up -d --build")
+				cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker-compose -f %s/docker-compose.yml up -d --build", os.Getenv("DEPLOY_LOCAL_DOCKER_PATH")))
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 				cmd.Run()
@@ -319,8 +321,8 @@ func commands() {
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 				cmd.Run()
-
-				cmd = exec.Command("/bin/sh", "-c", "rm -vrf ./database ./nginx_php ./docker-compose.yml")
+				ap := os.Getenv("DEPLOY_LOCAL_DOCKER_PATH")
+				cmd = exec.Command("/bin/sh", "-c", fmt.Sprintf("rm -vrf %s/database %s/nginx_php %s/docker-compose.yml", ap, ap, ap))
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 				cmd.Run()
@@ -352,15 +354,16 @@ COMMANDS:
 }
 
 func getfile(text string) string {
+	ap := os.Getenv("DEPLOY_LOCAL_DOCKER_PATH")
 	if text == "" {
-		file, err := ioutil.ReadFile("internal/config/modules/nginx/site.conf")
+		file, err := ioutil.ReadFile(fmt.Sprintf("%s/internal/config/modules/nginx/site.conf", ap))
 		if err != nil {
 			log.Fatal(fmt.Sprintf("Error loading file with entered name: %s", text))
 		}
 		return string(file)
 	} else {
 
-		path := fmt.Sprintf("internal/config/modules/nginx/sites_conf/%s", text)
+		path := fmt.Sprintf("%s/internal/config/modules/nginx/sites_conf/%s", ap, text)
 		file, err := ioutil.ReadFile(path)
 		if err != nil {
 			log.Fatal(fmt.Sprintf("Error loading file with entered name: %s", text))
