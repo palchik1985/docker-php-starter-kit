@@ -10,32 +10,23 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/user"
 	"strings"
 )
 
-func main() {
+var app = cli.NewApp()
 
-	// todo CONTINIOUS INTEGRATION:
-	// todo: сделать скрипт работы с ssh: генерация ssh ключа, отправка ключа админу, регистрация на сервере
-	// toDo: сделать скрипт, работающий с вебхуками от битбакет, и обновляющий нужные ветки в нужных проектах (проектонезависимо)
-
-	// https://habr.com/ru/post/420673/ docker for prod
-	// good PHP Dockerfile (alpine based) for Symfony https://github.com/eko/docker-symfony
-	// todo: сделать проверку отступов в конфигах контейнеров: (split на строки и проверка первых символов)
-
-	// override --help message
-	cli.AppHelpTemplate = `
-USAGE:
-	mainscript (Rename filename to short name for fast usage!) [command]
-{{if .Commands}}
-COMMANDS:
-{{range .Commands}}{{if not .HideHelp}}   {{join .Names ", "}}{{ "\t"}}{{.Usage}}{{ "\n" }}{{end}}{{end}}{{end}}
-`
-	app := cli.NewApp()
+func commands() {
 	app.Commands = []cli.Command{
+		//{
+		//	Name:  "init", //toDo create init command for fill .env by command script
+		//	Usage: "Write env variables if you don't have it",
+		//	Action: func(c *cli.Context) {},
+		//},
 		{
-			Name:  "cp",
-			Usage: "Creates Project. Creates file docker-compose.yml with needed containers which you choose in .env file. WARNING! Your changes in docker-compose.yml will be overrided!",
+			Name:    "create_project",
+			Aliases: []string{"cp"},
+			Usage:   "Creates Project. Creates file docker-compose.yml with needed containers which you choose in .env file. WARNING! Your changes in docker-compose.yml will be overrided!",
 			Action: func(c *cli.Context) {
 				// warning
 				reader := bufio.NewReader(os.Stdin)
@@ -176,37 +167,39 @@ COMMANDS:
 			},
 		},
 		{
-			Name:  "ps",
-			Usage: "Shows list of ALL runned containers",
+			Name:    "list_container",
+			Aliases: []string{"ps"},
+			Usage:   "Shows list of ALL runned containers",
 			Action: func(c *cli.Context) {
 
-				// load .env
-				err := godotenv.Load()
-				if err != nil {
-					log.Fatal("Error loading .env file")
-				}
 				cmd := exec.Command("/bin/sh", "-c", "docker ps")
 				cmd.Stdout = os.Stdout
 				cmd.Run()
 			},
 		},
 		{
-			Name:  "ci",
-			Usage: "Usage: ci [path]. COMPOSER INSTALL. Default runs in PROJECT_ROOT. You can add another PATH with second argument. WARNING: Use only absolute path in container!",
+			Name:    "composer_inst",
+			Aliases: []string{"ci"},
+			Usage:   "Usage: ci [path]. COMPOSER INSTALL. Default runs in PROJECT_ROOT. You can add another PATH with second argument. WARNING: Use only absolute path in container!",
 			Action: func(c *cli.Context) {
 
+				// get current user. It needed because files after composer install will be owned by root:root
+				user, err := user.Current()
+				if err != nil {
+					panic(err)
+				}
 				// load .env
-				err := godotenv.Load()
+				err = godotenv.Load()
 				if err != nil {
 					log.Fatal("Error loading .env file")
 				}
 				if c.Args().First() == "" {
-					cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker exec -i %s_php composer install", os.Getenv("APPNAME")))
+					cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker exec -u %s -i %s_php composer install", user.Name, os.Getenv("APPNAME")))
 					cmd.Stdout = os.Stdout
 					cmd.Stderr = os.Stderr
 					cmd.Run()
 				} else {
-					cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker exec -w %s -i %s_php composer install", c.Args().First(), os.Getenv("APPNAME")))
+					cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker exec -u %s -w %s -i %s_php composer install", user.Name, c.Args().First(), os.Getenv("APPNAME")))
 					cmd.Stdout = os.Stdout
 					cmd.Stderr = os.Stderr
 					cmd.Run()
@@ -214,8 +207,9 @@ COMMANDS:
 			},
 		},
 		{
-			Name:  "com",
-			Usage: "Run command in container. Usage: com <container_name> \"<command>\". Few words command ONLY LIKE \"COMMAND NO ONE WORD\"! ",
+			Name:    "command",
+			Aliases: []string{"com"},
+			Usage:   "Run command in container. Usage: com <container_name> \"<command>\". Few words command ONLY LIKE \"COMMAND NO ONE WORD\"! ",
 			Action: func(c *cli.Context) {
 				// load .env
 				err := godotenv.Load()
@@ -230,8 +224,9 @@ COMMANDS:
 			},
 		},
 		{
-			Name:  "st",
-			Usage: "Stops ALL runned Docker containers",
+			Name:    "stopall",
+			Aliases: []string{"st"},
+			Usage:   "Stops ALL runned Docker containers",
 			Action: func(c *cli.Context) {
 
 				exec.Command("/bin/sh", "-c", "docker stop $(docker ps -aq)").Run()
@@ -244,8 +239,9 @@ COMMANDS:
 			},
 		},
 		{
-			Name:  "logs",
-			Usage: "Shows nginx error logs for this project. You also can see logfile at ./nginx/logs/APPNAME_error.log",
+			Name:    "logs",
+			Aliases: []string{"lg"},
+			Usage:   "Shows nginx error logs for this project. You also can see logfile at ./nginx/logs/APPNAME_error.log",
 			Action: func(c *cli.Context) {
 				// load .env
 				err := godotenv.Load()
@@ -261,8 +257,9 @@ COMMANDS:
 			},
 		},
 		{
-			Name:  "du",
-			Usage: "Dump Upload. Uploads sql dump to mysql container. Place your dump.sql file to ./database folder before running",
+			Name:    "dump_upload",
+			Aliases: []string{"du"},
+			Usage:   "Dump Upload. Uploads sql dump to mysql container. Place your dump.sql file to ./database folder before running",
 			Action: func(c *cli.Context) {
 				// load .env
 				err := godotenv.Load()
@@ -291,8 +288,9 @@ COMMANDS:
 			},
 		},
 		{
-			Name:  "status",
-			Usage: "Statistics about all running docker containers",
+			Name:    "status",
+			Aliases: []string{"s"},
+			Usage:   "Statistics about all running docker containers",
 			Action: func(c *cli.Context) {
 
 				cmd := exec.Command("/bin/sh", "-c", "docker stats")
@@ -302,8 +300,9 @@ COMMANDS:
 			},
 		},
 		{
-			Name:  "disk",
-			Usage: "Statistics about disk usage by docker",
+			Name:    "disk",
+			Aliases: []string{"d"},
+			Usage:   "Statistics about disk usage by docker",
 			Action: func(c *cli.Context) {
 
 				cmd := exec.Command("/bin/sh", "-c", "docker system df")
@@ -313,8 +312,9 @@ COMMANDS:
 			},
 		},
 		{
-			Name:  "detstat",
-			Usage: "Detail statistics about all docker containers, images, volumes on host machine",
+			Name:    "detstat",
+			Aliases: []string{"ds"},
+			Usage:   "Detail statistics about all docker containers, images, volumes on host machine",
 			Action: func(c *cli.Context) {
 
 				cmd := exec.Command("/bin/sh", "-c", "docker system df -v")
@@ -345,6 +345,22 @@ COMMANDS:
 			},
 		},
 	}
+}
+
+func main() {
+	// good PHP Dockerfile (alpine based) for Symfony https://github.com/eko/docker-symfony
+	// todo: сделать проверку отступов в конфигах контейнеров: (split на строки и проверка первых символов)
+
+	// override --help message
+	cli.AppHelpTemplate = `
+USAGE:
+	mainscript (Rename filename to short name for fast usage!) <command>
+{{if .Commands}}
+COMMANDS:
+{{range .Commands}}{{if not .HideHelp}}   {{join .Names ", "}}{{ "\t"}}{{.Usage}}{{ "\n" }}{{end}}{{end}}{{end}}
+`
+
+	commands()
 
 	err := app.Run(os.Args)
 	if err != nil {
