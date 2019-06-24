@@ -180,12 +180,12 @@ func commands() {
 					log.Fatal("Error loading .env file")
 				}
 				if c.Args().First() == "" {
-					cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker exec -u %s -i %s_php composer install", user.Name, os.Getenv("APPNAME")))
+					cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker exec -u %s -i %s_nginx_php composer install", user.Uid, os.Getenv("APPNAME")))
 					cmd.Stdout = os.Stdout
 					cmd.Stderr = os.Stderr
 					cmd.Run()
 				} else {
-					cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker exec -u %s -w %s -i %s_php composer install", user.Name, c.Args().First(), os.Getenv("APPNAME")))
+					cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker exec -u %s -w %s -i %s_nginx_php composer install", user.Uid, c.Args().First(), os.Getenv("APPNAME")))
 					cmd.Stdout = os.Stdout
 					cmd.Stderr = os.Stderr
 					cmd.Run()
@@ -203,7 +203,7 @@ func commands() {
 					log.Fatal("Error loading .env file")
 				}
 
-				cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker exec -i %s_php %s", os.Getenv("APPNAME"), c.Args().First()))
+				cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker exec -i %s_nginx_php %s", os.Getenv("APPNAME"), c.Args().First()))
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 				cmd.Run()
