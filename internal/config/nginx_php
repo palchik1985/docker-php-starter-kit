@@ -10,6 +10,7 @@
       - 80:8080 #host:container
       volumes:
       - ./..:${SITE_WORKDIR_IN_CONTAINER}
-      - ./nginx_php/site.conf:/etc/nginx/conf.d/site.conf # local site configuration
+      - ./nginx_php/site.conf:/etc/nginx/sites-enabled/site.conf # local site configuration
       links:
       - db
+      restart: always

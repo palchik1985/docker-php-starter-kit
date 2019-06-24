@@ -1,3 +1,4 @@
 .idea
 database/db_file
 xdebug_logs
+composer.json

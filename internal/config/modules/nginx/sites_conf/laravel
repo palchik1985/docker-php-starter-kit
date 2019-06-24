@@ -1,12 +1,12 @@
 server {
-    listen 80;
+    #default port in container is 8080
+    listen 8080;
     server_name ${APPNAME}.${ENV};
 
-    root ${SITE_WORKDIR_IN_CONTAINER};
+    root ${SITE_WORKDIR_IN_CONTAINER}/public;
     index index.php index.html index.htm;
 
-    error_log  /var/log/nginx/${APPNAME}_error.log;
-    access_log /var/log/nginx/${APPNAME}_access.log;
+    # all logs you can see with command $ docker logs -f <container_name>
 
     location / {
          try_files $uri $uri/ /index.php?$args;
@@ -14,8 +14,10 @@ server {
 
     location ~ \.php$ {
         fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        include snippets/fastcgi-php.conf;
         fastcgi_pass  127.0.0.1:9000;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param SCRIPT_NAME $fastcgi_script_name;
+        fastcgi_index index.php;
+        include fastcgi_params;
     }
 }

@@ -1,12 +1,13 @@
 server {
-    listen 80;
+    #default port in container is 8080
+    listen 8080;
     server_name ${APPNAME}.${ENV};
  
     root ${SITE_WORKDIR_IN_CONTAINER};
     index index.php;
- 
-    error_log  /var/log/nginx/${APPNAME}_error.log;
-    access_log /var/log/nginx/${APPNAME}_access.log;
+
+    # all logs you can see with command $ docker logs -f <container_name>
+
  
     location / {
         try_files $uri $uri/ /index.php?$args;
