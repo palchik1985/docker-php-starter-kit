@@ -1,6 +1,6 @@
 server {
     listen 80;
-    server_name ${APPNAME}.local;
+    server_name ${APPNAME}.${ENV};
  
     root ${SITE_WORKDIR_IN_CONTAINER};
     index index.php;

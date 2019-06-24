@@ -84,6 +84,7 @@ func commands() {
 				file := string(fileNginxConf)
 				// vars replace in site.conf
 				file = strings.Replace(file, "${APPNAME}", os.Getenv("APPNAME"), -1)
+				file = strings.Replace(file, "${ENV}", os.Getenv("ENV"), -1)
 				file = strings.Replace(file, "${SITE_WORKDIR_IN_CONTAINER}", os.Getenv("SITE_WORKDIR_IN_CONTAINER"), -1)
 				// write site.conf
 				_ = os.Mkdir("nginx", 0755)
