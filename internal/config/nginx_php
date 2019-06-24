@@ -1,0 +1,15 @@
+
+  # nginx service configuration. Use "alpine" versions because it has very small volumes
+  # WARNING: you can't use apt-get commands in alpine containers, so use it only if you want fully standard functionality
+  nginx_php:
+      container_name: ${APPNAME}_nginx_php
+      build:
+          context: ./nginx_php/
+      working_dir: ${SITE_WORKDIR_IN_CONTAINER}
+      ports:
+      - 80:8080 #host:container
+      volumes:
+      - ./..:${SITE_WORKDIR_IN_CONTAINER}
+      - ./nginx_php/site.conf:/etc/nginx/conf.d/site.conf # local site configuration
+      links:
+      - db

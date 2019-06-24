@@ -14,6 +14,8 @@ import (
 	"strings"
 )
 
+// toDO create bash aliases: fill ~/.bash_aliases. Restart bash with "$ . ~/.bashrc"
+
 var app = cli.NewApp()
 
 func commands() {
@@ -30,6 +32,7 @@ func commands() {
 			Action: func(c *cli.Context) {
 				// warning
 				reader := bufio.NewReader(os.Stdin)
+				// toDo: проверить есть ли файлы, и спрашивать только если они есть
 				fmt.Print("Your changes in docker-compose.yml will be lost. Continue? (y/n) ")
 				text, _ := reader.ReadString('\n')
 				if string(text[0]) != "y" {
@@ -53,13 +56,35 @@ func commands() {
 				fileCompose.Write(fileStart)
 				fileCompose.Write([]byte("\n\n"))
 
-				// add nginx
-				fileNginx, err := ioutil.ReadFile("internal/config/nginx")
+				// add nginx_php
+
+				fileNginx, err := ioutil.ReadFile("internal/config/nginx_php")
 				if err != nil {
-					log.Fatal("Error loading nginx file from ./internal/config/nginx. Aborted.")
+					log.Fatal("Error loading nginx file from ./internal/config/nginx_php. Aborted.")
 				}
 				fileCompose.Write(fileNginx)
 				fileCompose.Write([]byte("\n\n"))
+
+				// add config files for nginx_php
+				_ = os.Mkdir("nginx_php", 0755)
+				_ = os.Mkdir("nginx_php/config", 0755)
+
+				file, _ := ioutil.ReadFile("internal/config/modules/trafex_php_nginx/Dockerfile")
+				filestring := string(file)
+				filestring = strings.Replace(filestring, "COPY --chown=nobody src/ /var/www/html/", "", -1)
+				ioutil.WriteFile("nginx_php/Dockerfile", []byte(filestring), 0644)
+
+				file, _ = ioutil.ReadFile("internal/config/modules/trafex_php_nginx/config/fpm-pool.conf")
+				ioutil.WriteFile("nginx_php/config/fpm-pool.conf", file, 0644)
+
+				file, _ = ioutil.ReadFile("internal/config/modules/trafex_php_nginx/config/nginx.conf")
+				ioutil.WriteFile("nginx_php/config/nginx.conf", file, 0644)
+
+				file, _ = ioutil.ReadFile("internal/config/modules/trafex_php_nginx/config/php.ini")
+				ioutil.WriteFile("nginx_php/config/php.ini", file, 0644)
+
+				file, _ = ioutil.ReadFile("internal/config/modules/trafex_php_nginx/config/supervisord.conf")
+				ioutil.WriteFile("nginx_php/config/supervisord.conf", file, 0644)
 
 				// Replace nginx site config
 
@@ -68,8 +93,8 @@ func commands() {
 				reader = bufio.NewReader(os.Stdin)
 				fmt.Print("\nPlease write needed framework/cms nginx config name, or write nothing for default. \n(Available list: ")
 				files, _ := ioutil.ReadDir("./internal/config/modules/nginx/sites_conf")
-				for _, file := range files {
-					fmt.Print(file.Name() + ", ")
+				for _, filesite := range files {
+					fmt.Print(filesite.Name() + ", ")
 				}
 				fmt.Print("):")
 				// read answer
@@ -81,51 +106,51 @@ func commands() {
 				// read nginx site config file. Chosen file or default if didn't get any choose from user
 				fileNginxConf := getfile(text)
 
-				file := string(fileNginxConf)
+				filestring = string(fileNginxConf)
 				// vars replace in site.conf
-				file = strings.Replace(file, "${APPNAME}", os.Getenv("APPNAME"), -1)
-				file = strings.Replace(file, "${ENV}", os.Getenv("ENV"), -1)
-				file = strings.Replace(file, "${SITE_WORKDIR_IN_CONTAINER}", os.Getenv("SITE_WORKDIR_IN_CONTAINER"), -1)
+				filestring = strings.Replace(filestring, "${APPNAME}", os.Getenv("APPNAME"), -1)
+				filestring = strings.Replace(filestring, "${ENV}", os.Getenv("ENV"), -1)
+				filestring = strings.Replace(filestring, "${SITE_WORKDIR_IN_CONTAINER}", os.Getenv("SITE_WORKDIR_IN_CONTAINER"), -1)
 				// write site.conf
-				_ = os.Mkdir("nginx", 0755)
-				_ = os.Mkdir("nginx/logs", 0755)
-				ioutil.WriteFile("nginx/site.conf", []byte(file), 0644)
+				//_ = os.Mkdir("nginx", 0755)
+				//_ = os.Mkdir("nginx/logs", 0755)
+				ioutil.WriteFile("nginx_php/site.conf", []byte(filestring), 0644)
 				// same as nginx.conf
-				fileNginxConf1, err := ioutil.ReadFile("internal/config/modules/nginx/nginx.conf")
-				if err != nil {
-					log.Fatal(err)
-				}
-				ioutil.WriteFile("nginx/nginx.conf", fileNginxConf1, 0644)
+				//fileNginxConf1, err := ioutil.ReadFile("internal/config/modules/nginx/nginx.conf")
+				//if err != nil {
+				//	log.Fatal(err)
+				//}
+				//ioutil.WriteFile("nginx/nginx.conf", fileNginxConf1, 0644)
 
 				// add php
-				filePhp, err := ioutil.ReadFile("internal/config/php")
-				if err != nil {
-					log.Fatal(err)
-				}
-				fileCompose.Write(filePhp)
-				fileCompose.Write([]byte("\n\n"))
-				// add Dockerfile for php needed version (7.1-7.3)
-				filePhpConf, err := ioutil.ReadFile("internal/config/modules/php/Dockerfile")
-				if err != nil {
-					log.Fatal(err)
-				}
-				file = string(filePhpConf)
-				// vars replace Dockerfile
-				file = strings.Replace(file, "${PHPFPM_VERSION}", os.Getenv("PHPFPM_VERSION"), -1)
-				file = strings.Replace(file, "${SITE_WORKDIR_IN_CONTAINER}", os.Getenv("SITE_WORKDIR_IN_CONTAINER"), -1)
-				file = strings.Replace(file, "${NEEDED_PHP_MODULES}", os.Getenv("NEEDED_PHP_MODULES"), -1)
-
-				// write Dockerfile
-				_ = os.Mkdir("php", 0755)
-				ioutil.WriteFile("php/Dockerfile", []byte(file), 0644)
-				// copy xdebug.ini, php.ini
-				fileXdebugConf, err := ioutil.ReadFile("internal/config/modules/php/xdebug.ini")
-				err2 := ioutil.WriteFile("php/xdebug.ini", fileXdebugConf, 0644)
-				if err2 != nil {
-					log.Fatal(err2)
-				}
-				filePhpiniConf, err := ioutil.ReadFile("internal/config/modules/php/php.ini")
-				ioutil.WriteFile("php/php.ini", filePhpiniConf, 0644)
+				//filePhp, err := ioutil.ReadFile("internal/config/php")
+				//if err != nil {
+				//	log.Fatal(err)
+				//}
+				//fileCompose.Write(filePhp)
+				//fileCompose.Write([]byte("\n\n"))
+				//// add Dockerfile for php needed version (7.1-7.3)
+				//filePhpConf, err := ioutil.ReadFile("internal/config/modules/php/Dockerfile")
+				//if err != nil {
+				//	log.Fatal(err)
+				//}
+				//file = string(filePhpConf)
+				//// vars replace Dockerfile
+				//file = strings.Replace(file, "${PHPFPM_VERSION}", os.Getenv("PHPFPM_VERSION"), -1)
+				//file = strings.Replace(file, "${SITE_WORKDIR_IN_CONTAINER}", os.Getenv("SITE_WORKDIR_IN_CONTAINER"), -1)
+				//file = strings.Replace(file, "${NEEDED_PHP_MODULES}", os.Getenv("NEEDED_PHP_MODULES"), -1)
+				//
+				//// write Dockerfile
+				//_ = os.Mkdir("php", 0755)
+				//ioutil.WriteFile("php/Dockerfile", []byte(file), 0644)
+				//// copy xdebug.ini, php.ini
+				//fileXdebugConf, err := ioutil.ReadFile("internal/config/modules/php/xdebug.ini")
+				//err2 := ioutil.WriteFile("php/xdebug.ini", fileXdebugConf, 0644)
+				//if err2 != nil {
+				//	log.Fatal(err2)
+				//}
+				//filePhpiniConf, _ := ioutil.ReadFile("internal/config/modules/php/php.ini")
+				//ioutil.WriteFile("php/php.ini", filePhpiniConf, 0644)
 
 				// add db
 				if strings.ToLower(os.Getenv("DB_DRIVER")) == "mysql" {
@@ -339,7 +364,7 @@ func commands() {
 				cmd.Stderr = os.Stderr
 				cmd.Run()
 
-				cmd = exec.Command("/bin/sh", "-c", "rm -vrf ./database ./nginx ./php ./docker-compose.yml")
+				cmd = exec.Command("/bin/sh", "-c", "rm -vrf ./database ./nginx_php ./docker-compose.yml")
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 				cmd.Run()

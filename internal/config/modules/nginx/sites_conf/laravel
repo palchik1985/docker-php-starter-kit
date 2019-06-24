@@ -15,7 +15,7 @@ server {
     location ~ \.php$ {
         fastcgi_split_path_info ^(.+\.php)(/.+)$;
         include snippets/fastcgi-php.conf;
-        fastcgi_pass php:9000;
+        fastcgi_pass  127.0.0.1:9000;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
     }
 }
