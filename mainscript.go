@@ -70,6 +70,7 @@ func commands() {
 				// add config files for nginx_php
 				_ = os.Mkdir(fmt.Sprintf("%s/nginx_php", abspath), 0755)
 				_ = os.Mkdir(fmt.Sprintf("%s/nginx_php/config", abspath), 0755)
+				_ = os.Mkdir(fmt.Sprintf("%s/database", abspath), 0755)
 
 				file, _ := ioutil.ReadFile(fmt.Sprintf("%s/internal/config/modules/trafex_php_nginx/Dockerfile", abspath))
 				ioutil.WriteFile(fmt.Sprintf("%s/nginx_php/Dockerfile", abspath), file, 0644)
@@ -361,13 +362,13 @@ func getfile(text string) string {
 			log.Fatal(fmt.Sprintf("Error loading file with entered name: %s", text))
 		}
 		return string(file)
-	} else {
-
-		path := fmt.Sprintf("%s/internal/config/modules/nginx/sites_conf/%s", ap, text)
-		file, err := ioutil.ReadFile(path)
-		if err != nil {
-			log.Fatal(fmt.Sprintf("Error loading file with entered name: %s", text))
-		}
-		return string(file)
 	}
+
+	path := fmt.Sprintf("%s/internal/config/modules/nginx/sites_conf/%s", ap, text)
+	file, err := ioutil.ReadFile(path)
+	if err != nil {
+		log.Fatal(fmt.Sprintf("Error loading file with entered name: %s", text))
+	}
+	return string(file)
+
 }
