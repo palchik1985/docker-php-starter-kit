@@ -15,6 +15,7 @@ import (
 )
 
 // toDO create bash aliases: fill ~/.bash_aliases. Restart bash with "$ . ~/.bashrc"
+// toDo refactor for posibility of using with composer.json ????
 
 var app = cli.NewApp()
 
@@ -51,6 +52,7 @@ func commands() {
 				var fileCompose bytes.Buffer
 
 				// add start part to config file
+				// todo: исправить текст ошибки, указать что надо проверить путь в .env
 				fileStart, err := ioutil.ReadFile(fmt.Sprintf("%s/internal/config/start", abspath))
 				if err != nil {
 					log.Fatal(fmt.Sprintf("Error loading start part of file from %s/internal/config/start. Aborted.", abspath))
@@ -181,12 +183,12 @@ func commands() {
 					log.Fatal("Error loading .env file")
 				}
 				if c.Args().First() == "" {
-					cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker exec -u %s -i %s_nginx_php composer install", user.Uid, os.Getenv("APPNAME")))
+					cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker exec -u %s:%s -i %s_nginx_php composer install", user.Uid, user.Gid, os.Getenv("APPNAME")))
 					cmd.Stdout = os.Stdout
 					cmd.Stderr = os.Stderr
 					cmd.Run()
 				} else {
-					cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker exec -u %s -w %s -i %s_nginx_php composer install", user.Uid, c.Args().First(), os.Getenv("APPNAME")))
+					cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker exec -u %s:%s -w %s -i %s_nginx_php composer install", user.Uid, user.Gid, c.Args().First(), os.Getenv("APPNAME")))
 					cmd.Stdout = os.Stdout
 					cmd.Stderr = os.Stderr
 					cmd.Run()
@@ -204,7 +206,13 @@ func commands() {
 					log.Fatal("Error loading .env file")
 				}
 
-				cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker exec -i %s_nginx_php %s", os.Getenv("APPNAME"), c.Args().First()))
+				// get current user. It needed because in other case files after "composer install" will be owned by root:root
+				user, err := user.Current()
+				if err != nil {
+					panic(err)
+				}
+
+				cmd := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker exec -u %s:%s -i %s_nginx_php %s", user.Uid, user.Gid, os.Getenv("APPNAME"), c.Args().First()))
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 				cmd.Run()

@@ -1,19 +1,69 @@
 server {
-    listen 80;
+    #default port in container is 8080
+    listen 8080;
     server_name ${APPNAME}.${ENV};
  
-    root ${SITE_WORKDIR_IN_CONTAINER};
-    index index.php index.html;
+    root ${SITE_WORKDIR_IN_CONTAINER}/frontend/web;
+    index index.php;
  
-    error_log  /var/log/nginx/${APPNAME}_error.log;
-    access_log /var/log/nginx/${APPNAME}_access.log;
+    # all logs you can see with command $ docker logs -f <container_name>
 
     client_max_body_size 32m;
 
     location / {
-        try_files $uri $uri/ /index.php?$args;
+        try_files $uri $uri/ /index.php$is_args$args;
     }
  
+    location ~ \.php$ {
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass  127.0.0.1:9000;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+}
+
+server {
+    #default port in container is 8080
+    listen 8080;
+    server_name admin.${APPNAME}.${ENV};
+
+    root ${SITE_WORKDIR_IN_CONTAINER}/backend/web;
+    index index.php;
+
+    # all logs you can see with command $ docker logs -f <container_name>
+
+    client_max_body_size 32m;
+
+    location / {
+        try_files $uri $uri/ /index.php$is_args$args;
+    }
+
+    location ~ \.php$ {
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass  127.0.0.1:9000;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+}
+
+server {
+    #default port in container is 8080
+    listen 8080;
+    server_name api.${APPNAME}.${ENV};
+
+    root ${SITE_WORKDIR_IN_CONTAINER}/api/web;
+    index index.php;
+
+    # all logs you can see with command $ docker logs -f <container_name>
+
+    client_max_body_size 32m;
+
+    location / {
+        try_files $uri $uri/ /index.php$is_args$args;
+    }
+
     location ~ \.php$ {
         fastcgi_split_path_info ^(.+\.php)(/.+)$;
         fastcgi_pass  127.0.0.1:9000;

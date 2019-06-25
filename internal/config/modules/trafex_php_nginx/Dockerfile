@@ -4,11 +4,14 @@ FROM alpine:3.10
 LABEL Maintainer="Tim de Pater <code@trafex.nl>" \
       Description="Lightweight container with Nginx 1.14 & PHP-FPM 7.2 based on Alpine Linux."
 COPY --from=composer /usr/bin/composer /usr/bin/composer
+
 # Install packages see http://dl-cdn.alpinelinux.org/alpine/v3.10/community/x86_64/
-RUN apk --update --no-cache add php7 php7-fpm php7-mysqli php7-json php7-openssl php7-curl \
+RUN apk --update --no-cache add git php7 php7-fpm php7-mysqli php7-json php7-openssl php7-curl \
     php7-zlib php7-xml php7-phar php7-intl php7-dom php7-xmlreader php7-xmlwriter php7-ctype \
     php7-mbstring php7-gd nginx supervisor curl php7-xdebug php7-tokenizer php7-fileinfo \
-    php7-pdo php7-pdo_mysql php7-session
+    php7-pdo php7-pdo_mysql php7-session php7-sockets php7-exif php7-iconv php7-simplexml php7-zip \
+    php7-memcached
+
 
 # Configure nginx
 COPY config/nginx.conf /etc/nginx/nginx.conf
